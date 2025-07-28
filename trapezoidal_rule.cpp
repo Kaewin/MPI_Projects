@@ -25,8 +25,6 @@ double Trap(
     return estimate;
 }
 
-
-
 int main (void) {
     int my_rank, comm_sz, n = 1024, local_n;
     double a = 0.0, b = 3.0, h , local_a, local_b;
