@@ -2,39 +2,32 @@
 #include <iostream>
 
 int main(int argc, char* argv[]) {
-
-	int rank, size;
-
 	MPI_Init(&argc, &argv);
 
+	int rank, size;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-	if (rank == 2) {
-		double myarray[50];
+	double start = MPI_Wtime();
 
-		std::cout << "Process 2 sending array" << std::endl;
+	for(int i = 0; i < 1000000; i++) {
+        double x = i * 2.5;
+    }
 
-		for(int i = 0; i < 50; i++) {
-			myarray[i] = i * 2;
-		}
+	double end = MPI_Wtime();
+	double elapsed = end - start;
 
-		MPI_Send(myarray, 50, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
-	}
+	std::cout << "Process " << rank << " took " << elapsed << " seconds" << std::endl << std::endl;;
+
+	MPI_Barrier(MPI_COMM_WORLD);
+
+	double received = 0;
+	MPI_Reduce(&elapsed, &received, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
 
 	if (rank == 0) {
-		double receivedarray[50];
-
-		std::cout << "Process 0 receiving array" << std::endl;
-
-		MPI_Recv(receivedarray, 50, MPI_DOUBLE, 2, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-		for(auto number : receivedarray) {
-			std::cout << number << std::endl;
-		}
+		std::cout << "Shortest process: " << received << std::endl;
 	}
 
 	MPI_Finalize();
-
 	return 0;
 }

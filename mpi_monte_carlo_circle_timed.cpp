@@ -63,11 +63,11 @@ int main(int argc, char* argv[]) {
 		total_in_circle = local_count;
 		for(int i = 1; i < size; i++) {
 			long long received_count;
-			MPI_Recv(&received_count, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			MPI_Recv(&received_count, 1, MPI_LONG_LONG, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 			total_in_circle += received_count;
 		}
 	} else {
-			MPI_Send(&local_count, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+			MPI_Send(&local_count, 1, MPI_LONG_LONG, 0, 0, MPI_COMM_WORLD);
 	}
 
 	// End timing

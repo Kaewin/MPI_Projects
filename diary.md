@@ -122,6 +122,14 @@ MPI_STATUSES_IGNORE // Plural for Waitall
 MPI_INFO_NULL      // No special hints
 ```
 
+### Common MPI_Reduce Operations:
+```cpp
+MPI_SUM // Add all values
+MPI_MIN // Find minimum
+MPI_MAX // Find maximum
+MPI_PROD // Multiply all values
+```
+
 
 Built monte-carlo simulation serial baseline
 Built MPI Monte-Carlo simulation with parallelization
