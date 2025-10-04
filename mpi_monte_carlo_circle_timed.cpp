@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
 		std::cout << "Processes: " << size << std::endl;
 		std::cout << "PI estimate: " << pi_estimate << std::endl;
 		std::cout << "Average time per rank: " << avg_time << " seconds" << std::endl;
-		std::cout << "Total time rank 0: " << local_elapsed << " seconds" << std::endl; 
+		std::cout << "Total time rank 0: " << local_elapsed << " seconds" << std::endl; 		
 	}
 
 	MPI_Finalize();
