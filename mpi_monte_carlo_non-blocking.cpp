@@ -1,7 +1,8 @@
 #include <mpi.h>
 #include <iostream>
+#include <random>
 
-int main(int arc, char& argv[]) {
+int main(int argc, char* argv[]) {
 	MPI_Init(&argc, &argv);
 
 	int rank, size;
