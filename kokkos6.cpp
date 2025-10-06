@@ -7,7 +7,6 @@ int main(int argc, char** argv) {
 	Kokkos::initialize(argc, argv);
 
 	{
-
 		Kokkos::View<int*> vector("vector", 3);
 		Kokkos::View<int**> matrix("matrix", 3, 3);
 
@@ -40,16 +39,11 @@ int main(int argc, char** argv) {
 			std::cout << std::endl;
 		}
 
-
-
 		Kokkos::parallel_for(3, KOKKOS_LAMBDA(int i) {
 			for (int j = 0; j < 3; j++){
-				matrix(i, j) += vector(i);
+				matrix(i, j) += vector(j);
 			}
 			});
-		
-
-
 
 		// Copy to host
 		auto view_host1 = Kokkos::create_mirror_view_and_copy(
