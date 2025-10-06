@@ -4,7 +4,7 @@ Working on Kokkos problems
 
 ## Compiling:
 
-g++ -std=c++20 kokkos1.cpp -o my_practice \
+g++ -std=c++23 kokkos1.cpp -o my_practice \
     -I$HOME/install/kokkos/include \
     -L$HOME/install/kokkos/lib -lkokkoscore \
     -Wl,-rpath,$HOME/install/kokkos/lib
