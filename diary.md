@@ -1,3 +1,14 @@
+# 10/6/2025
+
+Going to continue working on Kokkos problems. 
+
+Checklist of everything I've done and will be working on:
+
+- Go through Onboarding (up to data visualization)
+- Go through Kokkos problems (going to complete all)
+- Write test case for get/put
+
+
 # 10/5/2025
 
 Working on Kokkos problems
