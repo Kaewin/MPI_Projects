@@ -1,5 +1,14 @@
 # 10/5/2025
 
+Working on Kokkos problems
+
+## Compiling:
+
+g++ -std=c++20 kokkos1.cpp -o my_practice \
+    -I$HOME/install/kokkos/include \
+    -L$HOME/install/kokkos/lib -lkokkoscore \
+    -Wl,-rpath,$HOME/install/kokkos/lib
+
 # 10/4/2025
 
 Reviewed MPI tutorial on Livermore website (I have gone through about half of it before)
