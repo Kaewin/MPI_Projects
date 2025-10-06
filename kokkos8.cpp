@@ -5,6 +5,28 @@ make a function and check for correct shape/dimensions. You can use test Views A
 #include <iostream>
 #include <Kokkos_Core.hpp>
 
+void matrix_multiply(Kokkos::View<int*> vector, 
+                     Kokkos::View<int**> matrix,
+                     Kokkos::View<int*> result) {
+
+	// Check for proper dimensions
+	if (vector.span() != 3) {
+		std::cout << "Wrong dimensions. Only takes 1x3 vector." << std::endl;
+		return;
+	} if (matrix.span() != 9) {
+		std::cout << "Matrix has wrong dimensions. Only takes 3x3 matrix." << std::endl;
+		return;
+	}
+	// For each row of matrix
+	Kokkos::parallel_for(3, KOKKOS_LAMBDA(int i) {
+		int sum = 0;                        // Initialize sum for this row
+		for (int j = 0; j < 3; j++) {       // For each column of Matrix
+			sum += matrix(i, j) * vector(j);// Multiply and accumulate
+		}
+		result(i) = sum; 
+	});
+}
+
 int main(int argc, char** argv) {
 	Kokkos::initialize(argc, argv);
 	{
@@ -29,14 +51,7 @@ int main(int argc, char** argv) {
 		matrix(2,1) = 158;
 		matrix(2,2) = 120;
 
-		// For each row of matrix
-		Kokkos::parallel_for(3, KOKKOS_LAMBDA(int i) {
-			int sum = 0;                        // Initialize sum for this row
-			for (int j = 0; j < 3; j++) {       // For each column of Matrix
-				sum += matrix(i, j) * vector(j);// Multiply and accumulate
-			}
-			result(i) = sum; 
-		});
+		matrix_multiply(vector, matrix, result);
 
 		// Copy to host so we can print
 		auto view_host = Kokkos::create_mirror_view_and_copy(
@@ -51,3 +66,4 @@ int main(int argc, char** argv) {
 	Kokkos::finalize();
 	return 0;
 }
+
