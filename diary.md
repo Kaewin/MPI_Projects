@@ -1,11 +1,18 @@
+# 10/7/2025
+
+Did a little bit of Kokkos practice.
+
+Next I need to write a test case for get/put. I might not be able to 
+get to this until tomorrow.
+
 # 10/6/2025
 
 Going to continue working on Kokkos problems. 
 
 Checklist of everything I've done and will be working on:
 
-- ~~Go through Onboarding (up to data visualization)~~~
-- Go through Kokkos problems (going to complete all)
+- ~~Go through Onboarding (up to data visualization)~~
+- ~~Go through Kokkos problems (going to complete all)~~
 - Write test case for get/put
 
 
