@@ -1,3 +1,7 @@
+# 10/14/2025
+
+Cleaned up files. Still working on tasks from last meeting and refining my understanding of Kokkos and MPI.
+
 # 10/7/2025
 
 Did a little bit of Kokkos practice.
