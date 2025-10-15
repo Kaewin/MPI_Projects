@@ -1,6 +1,40 @@
+# 10/15/2025
+
+Working on building out the benchmark files for KokkosComm.
+
+## Parameter Quick Reference Card
+```
+fence()
+  └─ assert (optional, default=0)
+
+put(data, count, target, offset)
+  ├─ data:   pointer to send
+  ├─ count:  how many elements
+  ├─ target: which rank to write to
+  └─ offset: position in their window
+
+get(data, count, source, offset)
+  ├─ data:   pointer to receive into
+  ├─ count:  how many elements
+  ├─ source: which rank to read from
+  └─ offset: position in their window
+```
+
 # 10/14/2025
 
 Cleaned up files. Still working on tasks from last meeting and refining my understanding of Kokkos and MPI.
+
+Built out the get, put, and fence functions into the MPI_Window class
+
+Here is what is required:
+
+```cpp
+template <typename T>
+void get(T* origin_addr,        // Where to store data I'm getting
+         int count,              // How many elements
+         int source_rank,        // Who to Get from
+         MPI_Aint source_disp);  // Offset in their window
+```
 
 # 10/7/2025
 
