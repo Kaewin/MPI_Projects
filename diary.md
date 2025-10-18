@@ -59,19 +59,202 @@ if (rank == 0) {
                    &target_group);   // Output group
 }
 ```
+## Data Declaration
 
+Declare the data array that will be transferred. Must be declared **before** window creation and remain in scope throughout PSCW operations.
 
+```cpp
+int data[5] = {0, 0, 0, 0, 0};  // Target's memory that will be accessed
+MPI_Win win;                     // Window object for RMA
+```
 
+## Window Creation
 
+Both processes must call `MPI_Win_create` because it's a **collective operation**.
 
+### Target (rank 1) - exposes actual memory:
 
+```cpp
+MPI_Win_create(&data,              // Pointer to memory to expose
+               sizeof(int) * 5,    // Size in bytes
+               sizeof(int),        // Displacement unit (for addressing)
+               MPI_INFO_NULL,      // Info hints (none)
+               MPI_COMM_WORLD,     // Communicator
+               &win);              // Output: window object
+```
 
+### Origin (rank 0) - participates but doesn't expose:
 
+```cpp
+int dummy[1];  // Dummy array
+MPI_Win_create(dummy,              // Dummy pointer
+               sizeof(int),        // Dummy size
+               sizeof(int),        // Must be > 0 (use 1 or sizeof(int))
+               MPI_INFO_NULL,      // Info hints (none)
+               MPI_COMM_WORLD,     // Communicator
+               &win);              // Output: window object
+```
 
+---
 
+## PSCW Pattern - Target Process (rank 1)
 
+The target **exposes** its memory and waits for origins to finish.
 
+```cpp
+if (rank == 1) {
+    // Print data before
+    std::cout << "Target BEFORE: ";
+    for (int i = 0; i < 5; i++) std::cout << data[i] << " ";
+    std::cout << std::endl;
+    
+    // Start exposure epoch
+    MPI_Win_post(origin_group,  // Group of origins that can access
+                 0,              // Assert flags (0 = none)
+                 win);           // Window object
+    
+    // Wait for all origins to complete
+    MPI_Win_wait(win);           // Closes exposure epoch
+    
+    // Print data after
+    std::cout << "Target AFTER: ";
+    for (int i = 0; i < 5; i++) std::cout << data[i] << " ";
+    std::cout << std::endl;
+    
+    // Cleanup
+    MPI_Group_free(&origin_group);
+}
+```
 
+---
+
+## PSCW Pattern - Origin Process (rank 0)
+
+The origin **accesses** the target's memory.
+
+```cpp
+if (rank == 0) {
+    // Start access epoch
+    MPI_Win_start(target_group,  // Group of targets to access
+                  0,              // Assert flags (0 = none)
+                  win);           // Window object
+    
+    // Prepare data to send
+    int send_data[5] = {1, 2, 3, 4, 5};
+    
+    // Transfer data to target
+    MPI_Put(send_data,           // Source buffer (local data)
+            5,                    // Number of elements to send
+            MPI_INT,              // Source datatype
+            1,                    // Target rank
+            0,                    // Offset in target window (start at index 0)
+            5,                    // Number of elements at target
+            MPI_INT,              // Target datatype
+            win);                 // Window object
+    
+    // Close access epoch (signals target we're done)
+    MPI_Win_complete(win);
+    
+    // Cleanup
+    MPI_Group_free(&target_group);
+}
+```
+
+---
+
+## Cleanup
+
+Free groups and window before finalizing MPI.
+
+```cpp
+// Both processes: free world group
+MPI_Group_free(&world_group);
+
+// Both processes: free window
+MPI_Win_free(&win);
+```
+
+---
+
+## Complete PSCW Template
+
+```cpp
+#include <iostream>
+#include <mpi.h>
+
+int main(int argc, char** argv) {
+    MPI_Init(&argc, &argv);
+    
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    
+    MPI_Win win;
+    int data[5] = {0, 0, 0, 0, 0};
+    
+    {
+        // Get world group
+        MPI_Group world_group;
+        MPI_Comm_group(MPI_COMM_WORLD, &world_group);
+        
+        if (rank == 1) {  // TARGET
+            // Create origin group
+            MPI_Group origin_group;
+            int origin_ranks[1] = {0};
+            MPI_Group_incl(world_group, 1, origin_ranks, &origin_group);
+            
+            // Create window
+            MPI_Win_create(&data, sizeof(int) * 5, sizeof(int),
+                          MPI_INFO_NULL, MPI_COMM_WORLD, &win);
+            
+            // Print before
+            std::cout << "Target BEFORE: ";
+            for (int i = 0; i < 5; i++) std::cout << data[i] << " ";
+            std::cout << std::endl;
+            
+            // PSCW: Post → Wait
+            MPI_Win_post(origin_group, 0, win);
+            MPI_Win_wait(win);
+            
+            // Print after
+            std::cout << "Target AFTER: ";
+            for (int i = 0; i < 5; i++) std::cout << data[i] << " ";
+            std::cout << std::endl;
+            
+            // Cleanup
+            MPI_Group_free(&origin_group);
+            
+        } else {  // ORIGIN
+            // Create target group
+            MPI_Group target_group;
+            int target_ranks[1] = {1};
+            MPI_Group_incl(world_group, 1, target_ranks, &target_group);
+            
+            // Create window
+            int dummy[1];
+            MPI_Win_create(dummy, sizeof(int), sizeof(int),
+                          MPI_INFO_NULL, MPI_COMM_WORLD, &win);
+            
+            // PSCW: Start → Put → Complete
+            MPI_Win_start(target_group, 0, win);
+            
+            int send_data[5] = {1, 2, 3, 4, 5};
+            MPI_Put(send_data, 5, MPI_INT, 1, 0, 5, MPI_INT, win);
+            
+            MPI_Win_complete(win);
+            
+            // Cleanup
+            MPI_Group_free(&target_group);
+        }
+        
+        // Both: cleanup
+        MPI_Group_free(&world_group);
+    }
+    
+    MPI_Win_free(&win);
+    MPI_Finalize();
+}
+```
 
 # 10/15/2025
 
