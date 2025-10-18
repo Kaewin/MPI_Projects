@@ -2,6 +2,26 @@
 
 Going through Nicole's RMA notes. 
 
+## MPI Template Code:
+
+**MPI Initialization**
+
+```cpp
+int main(int argc, char** argv) {
+	MPI_Init(&argc, &argv);
+
+	int rank, size;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+	{
+		// Do stuff
+	}
+
+	MPI_Finalize();
+}
+```
+
 
 # 10/15/2025
 
