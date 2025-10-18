@@ -1,3 +1,8 @@
+# 10/18/2025
+
+Going through Nicole's RMA notes. 
+
+
 # 10/15/2025
 
 Working on building out the benchmark files for KokkosComm.
