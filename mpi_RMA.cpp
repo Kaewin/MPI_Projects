@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
 
 			// PSCW pattern
 			MPI_Win_post(origin_group, 0, win);
-			// ... wait for origin to finish ...
+			// wait for origin to finish 
 			MPI_Win_wait(win);
 
 			std::cout << "Target AFTER: ";
@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
 
 			MPI_Win_create(nullptr,
 							0,
-							0,
+							1,
 							MPI_INFO_NULL,
 							MPI_COMM_WORLD,
 							&win);
@@ -81,5 +81,6 @@ int main(int argc, char** argv) {
 		// Both processes: cleanup
 		MPI_Group_free(&world_group);
 	}
+	MPI_Win_free(&win);
 	MPI_Finalize();
 }
