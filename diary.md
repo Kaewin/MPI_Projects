@@ -4,7 +4,9 @@ Going through Nicole's RMA notes.
 
 ## MPI Template Code:
 
-**MPI Initialization**
+### MPI Initialization
+
+Standard MPI initialization.
 
 ```cpp
 int main(int argc, char** argv) {
@@ -21,6 +23,54 @@ int main(int argc, char** argv) {
 	MPI_Finalize();
 }
 ```
+
+### Get the world group
+```cpp
+MPI_Group world_group;
+MPI_Comm_group(MPI_COMM_WORLD, &world_group);
+```
+
+This creates a group containing all processes in MPI_COMM_WORLD.
+
+### Making Specific Group
+
+For Target (rank 1) - needs group with origin (rank 0):
+```cpp
+if (rank == 1) {
+    MPI_Group origin_group;
+    int origin_ranks[1] = {0};  // Array containing rank 0
+    
+    MPI_Group_incl(world_group,     // Source group
+                   1,                // How many ranks
+                   origin_ranks,     // Array of ranks
+                   &origin_group);   // Output group
+}
+```
+
+For Origin (rank 0) - needs group with target (rank 1):
+```cpp
+if (rank == 0) {
+    MPI_Group target_group;
+    int target_ranks[1] = {1};  // Array containing rank 1
+    
+    MPI_Group_incl(world_group,     // Source group
+                   1,                // How many ranks
+                   target_ranks,     // Array of ranks
+                   &target_group);   // Output group
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # 10/15/2025
