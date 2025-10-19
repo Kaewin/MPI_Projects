@@ -1,3 +1,9 @@
+# 10/19/2025
+
+Starting work for today.
+
+
+
 # 10/18/2025
 
 Going through Nicole's RMA notes. 
