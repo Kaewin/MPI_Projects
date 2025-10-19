@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
         for (int i = 0; i < 50; i++) std::cout << data[i] << " ";
         std::cout << std::endl;
         
-        // TARGET DOES NOTHING HERE! Passive! ⏸️
+        // TARGET DOES NOTHING HERE! Passive!
         
         // Barrier to wait for origin to finish (for demo purposes)
         MPI_Barrier(MPI_COMM_WORLD);
