@@ -2,6 +2,17 @@
 #include <vector>
 #include <mpi.h>
 
+void print_grid(char** grid, int local_rows, int local_cols, int rank, int iter) {
+    std::cout << "Rank " << rank << " iter " << iter << ":\n";
+    for (int i = 1; i <= local_rows; i++) {
+        for (int j = 1; j <= local_cols; j++) {
+            std::cout << grid[i][j];
+        }
+        std::cout << "\n";
+    }
+    std::cout << std::endl;
+}
+
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
 
@@ -48,10 +59,10 @@ int main(int argc, char** argv) {
     int row = rank / Q; // Determine the row based on the rank and number of columns
     int col = rank % Q; // Determine the column based on the rank and number of columns
     // Print the rank, row, and column for each process.
-    std::cout << "World rank " << rank
-              << " | row " << row
-              << " | col " << col
-              << std::endl;
+    // std::cout << "World rank " << rank
+    //           << " | row " << row
+    //           << " | col " << col
+    //           << std::endl;
 
     // Calculate all 8 neighbors in the 2D grid, considering wrap-around (toroidal) topology.
     int up = ((row - 1 + P) % P) * Q + col;
@@ -63,16 +74,16 @@ int main(int argc, char** argv) {
     int down_left = ((row + 1) % P) * Q + (col - 1 + Q) % Q;
     int down_right = ((row + 1) % P) * Q + (col + 1) % Q;
     // Neighborhood print statements:
-    std::cout << "Process " << rank << " (row " << row << ", col " << col << ") neighbors: "
-              << "up: " << up << ", down: " << down
-              << ", left: " << left << ", right: " << right
-              << ", up-left: " << up_left << ", up-right: " << up_right
-              << ", down-left: " << down_left << ", down-right: " << down_right
-              << std::endl;
+    // std::cout << "Process " << rank << " (row " << row << ", col " << col << ") neighbors: "
+    //           << "up: " << up << ", down: " << down
+    //           << ", left: " << left << ", right: " << right
+    //           << ", up-left: " << up_left << ", up-right: " << up_right
+    //           << ", down-left: " << down_left << ", down-right: " << down_right
+    //           << std::endl;
 
     int local_rows = N / P;
     int local_cols = N / Q;
-    std::cout << "Process " << rank << " has local grid size: " << local_rows << " x " << local_cols << std::endl;
+    // std::cout << "Process " << rank << " has local grid size: " << local_rows << " x " << local_cols << std::endl;
 
     // Allocate the local grid:
     char** local_grid = new char*[local_rows + 2];
@@ -116,7 +127,8 @@ int main(int argc, char** argv) {
     // Wrap halo exchange in a loop for multiple iterations:
     for (int iter = 0; iter < iterations; iter++) {
 
-        // TODO: Life rules
+        // TODO: Print out board
+        print_grid(local_grid, local_rows, local_cols, rank, iter);
 
         // Top to bottom communication:
         MPI_Sendrecv(
@@ -227,7 +239,7 @@ int main(int argc, char** argv) {
                         neighbors += (local_grid[i+di][j+dj] == '*') ? 1 : 0;;
                     }
                 }
-                if (local_grid[i][j] == '1') {
+                if (local_grid[i][j] == '*') {
                     if (neighbors < 2 || neighbors > 3) {
                         local_grid_next[i][j] = ' ';
                     } else {
