@@ -1,16 +1,55 @@
 #include <iostream>
 #include <vector>
 #include <mpi.h>
+#include <unistd.h>
 
-void print_grid(char** grid, int local_rows, int local_cols, int rank, int iter) {
-    std::cout << "Rank " << rank << " iter " << iter << ":\n";
-    for (int i = 1; i <= local_rows; i++) {
-        for (int j = 1; j <= local_cols; j++) {
-            std::cout << grid[i][j];
+void print_full_grid(char** local_grid, int local_rows, int local_cols,
+                     int N, int P, int Q, int rank, int iter,
+                     MPI_Comm comm) {
+    // Flatten local interior into a 1D buffer
+    std::vector<char> local_flat(local_rows * local_cols);
+    for (int i = 0; i < local_rows; i++)
+        for (int j = 0; j < local_cols; j++)
+            local_flat[i * local_cols + j] = local_grid[i+1][j+1];
+
+    // Gather all chunks to rank 0
+    std::vector<char> global_flat;
+    if (rank == 0) global_flat.resize(N * N);
+
+    MPI_Gather(local_flat.data(), local_rows * local_cols, MPI_CHAR,
+               global_flat.data(), local_rows * local_cols, MPI_CHAR,
+               0, comm);
+
+    if (rank == 0) {
+        // Reconstruct the full N×N grid from gathered chunks
+        std::vector<std::string> full_grid(N, std::string(N, ' '));
+
+        for (int r = 0; r < P; r++) {
+            for (int q = 0; q < Q; q++) {
+                int proc_rank = r * Q + q;
+                int base = proc_rank * local_rows * local_cols;
+                for (int i = 0; i < local_rows; i++) {
+                    for (int j = 0; j < local_cols; j++) {
+                        full_grid[r * local_rows + i][q * local_cols + j]
+                            = global_flat[base + i * local_cols + j];
+                    }
+                }
+            }
         }
-        std::cout << "\n";
+
+        // Clear screen and print
+        std::cout << "\033[2J\033[H"; // ANSI: clear screen, cursor to top
+        std::cout << "=== Iteration " << iter << " ===\n";
+        std::cout << "+" << std::string(N, '-') << "+\n";
+        for (int i = 0; i < N; i++) {
+            std::cout << "|" << full_grid[i] << "|\n";
+        }
+        std::cout << "+" << std::string(N, '-') << "+\n";
+        std::cout.flush();
+
+        // Small delay so you can see it animate
+        usleep(100000); // 100ms per frame
     }
-    std::cout << std::endl;
 }
 
 int main(int argc, char** argv) {
@@ -127,8 +166,6 @@ int main(int argc, char** argv) {
     // Wrap halo exchange in a loop for multiple iterations:
     for (int iter = 0; iter < iterations; iter++) {
 
-        // TODO: Print out board
-        print_grid(local_grid, local_rows, local_cols, rank, iter);
 
         // Top to bottom communication:
         MPI_Sendrecv(
@@ -257,6 +294,8 @@ int main(int argc, char** argv) {
 
         // Swap grids for the next iteration:
         std::swap(local_grid, local_grid_next);
+
+        print_full_grid(local_grid, local_rows, local_cols, N, P, Q, rank, iter, MPI_COMM_WORLD);
 
     } // End of iterations loop
 
