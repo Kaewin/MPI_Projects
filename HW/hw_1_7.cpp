@@ -3,53 +3,80 @@
 #include <mpi.h>
 #include <unistd.h>
 
+
+/*
+ * print_full_grid() — LLM-generated (Claude Sonnet 4.6, Anthropic)
+ * Generated via claude.ai on 2026-03-04
+ * Prompt: "I have some code for a game of life simulation, but I need a fancy
+ *          function that will print out what is happening inside so it can be
+ *          watched. Generate that for this code."
+ * Model output used with minor integration edits (parameter passing, call site).
+ */
 void print_full_grid(char** local_grid, int local_rows, int local_cols,
-                     int N, int P, int Q, int rank, int iter,
-                     MPI_Comm comm) {
-    // Flatten local interior into a 1D buffer
-    std::vector<char> local_flat(local_rows * local_cols);
+                     int N, int P, int Q, int rank, int row, int col, int iter) {
+
+    // Pack interior cells (no ghost rows/cols) into a flat send buffer
+    std::vector<char> send_buf(local_rows * local_cols);
     for (int i = 0; i < local_rows; i++)
         for (int j = 0; j < local_cols; j++)
-            local_flat[i * local_cols + j] = local_grid[i+1][j+1];
+            send_buf[i * local_cols + j] = local_grid[i + 1][j + 1];
 
-    // Gather all chunks to rank 0
-    std::vector<char> global_flat;
-    if (rank == 0) global_flat.resize(N * N);
+    // Rank 0 allocates a receive buffer for all processes' data
+    std::vector<char> recv_buf;
+    if (rank == 0)
+        recv_buf.resize(N * N);  // Total cells across all processes
 
-    MPI_Gather(local_flat.data(), local_rows * local_cols, MPI_CHAR,
-               global_flat.data(), local_rows * local_cols, MPI_CHAR,
-               0, comm);
+    MPI_Gather(
+        send_buf.data(), local_rows * local_cols, MPI_CHAR,
+        recv_buf.data(), local_rows * local_cols, MPI_CHAR,
+        0, MPI_COMM_WORLD
+    );
 
     if (rank == 0) {
-        // Reconstruct the full N×N grid from gathered chunks
-        std::vector<std::string> full_grid(N, std::string(N, ' '));
+        // Reconstruct the full N×N grid from gathered blocks.
+        // MPI_Gather deposits process r's block at recv_buf[r * local_rows * local_cols].
+        // Each process r occupies grid row-block (r/Q) and col-block (r%Q).
+        std::vector<std::vector<char>> full(N, std::vector<char>(N, ' '));
 
-        for (int r = 0; r < P; r++) {
-            for (int q = 0; q < Q; q++) {
-                int proc_rank = r * Q + q;
-                int base = proc_rank * local_rows * local_cols;
-                for (int i = 0; i < local_rows; i++) {
-                    for (int j = 0; j < local_cols; j++) {
-                        full_grid[r * local_rows + i][q * local_cols + j]
-                            = global_flat[base + i * local_cols + j];
-                    }
-                }
-            }
+        for (int r = 0; r < P * Q; r++) {
+            int proc_row = r / Q;   // which row-band this process owns
+            int proc_col = r % Q;   // which col-band this process owns
+            int row_offset = proc_row * local_rows;
+            int col_offset = proc_col * local_cols;
+
+            for (int i = 0; i < local_rows; i++)
+                for (int j = 0; j < local_cols; j++)
+                    full[row_offset + i][col_offset + j] =
+                        recv_buf[r * local_rows * local_cols + i * local_cols + j];
         }
 
-        // Clear screen and print
-        std::cout << "\033[2J\033[H"; // ANSI: clear screen, cursor to top
-        std::cout << "=== Iteration " << iter << " ===\n";
-        std::cout << "+" << std::string(N, '-') << "+\n";
+        // Clear terminal and print header
+        std::cout << "\033[2J\033[H";  // ANSI: clear screen, cursor to top-left
+        std::cout << "╔";
+        for (int j = 0; j < N; j++) std::cout << "═";
+        std::cout << "╗\n";
+
         for (int i = 0; i < N; i++) {
-            std::cout << "|" << full_grid[i] << "|\n";
+            std::cout << "║";
+            for (int j = 0; j < N; j++)
+                std::cout << full[i][j];
+            std::cout << "║\n";
         }
-        std::cout << "+" << std::string(N, '-') << "+\n";
+
+        std::cout << "╚";
+        for (int j = 0; j < N; j++) std::cout << "═";
+        std::cout << "╝\n";
+        std::cout << " Iteration: " << iter + 1
+                  << "  Grid: " << N << "×" << N
+                  << "  Processes: " << P << "×" << Q << "\n";
         std::cout.flush();
 
-        // Small delay so you can see it animate
-        usleep(100000); // 100ms per frame
+        usleep(150000);  // 150ms pause so the animation is watchable
     }
+
+    // All processes must wait here — rank 0 can't start the next iteration's
+    // gather until everyone has finished computing their local_grid_next swap.
+    MPI_Barrier(MPI_COMM_WORLD);
 }
 
 int main(int argc, char** argv) {
@@ -295,7 +322,8 @@ int main(int argc, char** argv) {
         // Swap grids for the next iteration:
         std::swap(local_grid, local_grid_next);
 
-        print_full_grid(local_grid, local_rows, local_cols, N, P, Q, rank, iter, MPI_COMM_WORLD);
+        // PUT FUNCTION HERE
+        print_full_grid(local_grid, local_rows, local_cols, N, P, Q, rank, row, col, iter);
 
     } // End of iterations loop
 
